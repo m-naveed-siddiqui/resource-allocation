@@ -29,7 +29,7 @@
                 const month_and_year = this.value;
                 // Destructuring the array
                 const [year, month] = month_and_year.split('-');
-                let html = '';
+                let html = html_total = '';
                 $.ajax({
                     type: 'POST',
                     url: "{{ route('result') }}",
@@ -37,22 +37,34 @@
                     success: function(data, status, xhr){
                         console.log(data);
                         if (data['each']) {
-                            data['each'].forEach(project => {
-                                html += `${project.project_name} : `;
-                                project.resources.forEach(resource => {
-                                    html += `${resource.resource.name} (${resource.allocation}%) , `;
+                            data['each'].map(project => {
+                                html += `<strong>${project.project_name}:</strong> `;
+                                project.resources.map(resource => {
+                                    html += `${resource.resource.name} <small>(${resource.allocation}%)</small>, `;
                                 });
                                 html += '<br>';
                             });
                         }
-                        html += '<br><hr>Total Allocation : ';
-                        data['total_allocation'].forEach(total => {
-                            html += ` ${total.resource.name}(${total.total_allocation}%) , `;
-                        });
-                        $('#result').html(html || 'No records found');
+                        $('#result').html(html || '<i>No records found</i><br>');
+
+                        html_total += '<br><hr><strong>Total Allocation:</strong> ';
+                        html_total +=  data['resources'].map(resource => {
+                            const busy_resource = data['total_allocation'].find(br => br.resource_id==resource.id);
+                            const resource_total_allocation = busy_resource?.total_allocation ?? 0;
+                            return `${resource.name} <small>(${resource_total_allocation}%)</small>`;
+                        }).join(", ");
+
+                        html_total += '<br><hr><strong>Total Un-Allocation:</strong> ';
+                        html_total +=  data['resources'].map(resource => {
+                            const busy_resource = data['total_allocation'].find(br => br.resource_id==resource.id);
+                            const resource_total_unallocation = 100 - (busy_resource?.total_allocation ?? 0);
+                            return `${resource.name} <small>(${resource_total_unallocation<0 ? 0 : resource_total_unallocation}%)</small>`;
+                        }).join(", ");
+
+                        $('#result').append(html_total);
                     }
                 });
-            })
+            });
         </script>
     </body>
 </html>

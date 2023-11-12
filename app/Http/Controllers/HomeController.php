@@ -64,11 +64,9 @@ class HomeController extends Controller
             ];
         }
         $project_resources['total_allocation'] = ProjectResource::with('resource')->select('resource_id', DB::raw('SUM(allocation) AS total_allocation'))
-            // ->join('resources', 'project_resources.resource_id', '=', 'resources.id')
             ->whereYear('allocation_start_date', $request->year)->whereMonth('allocation_start_date', $request->month)
             ->groupBy('resource_id')->get();
-        $project_resources['resources'] = Resource::whereYear('joined_date', '<=', $request->year)
-            ->whereMonth('joined_date', '<=', $request->month)->get();
+        $project_resources['resources'] = Resource::where('joined_date', '<=', "$request->year-$request->month-31")->get();
 
         return response()->json($project_resources);
     }
