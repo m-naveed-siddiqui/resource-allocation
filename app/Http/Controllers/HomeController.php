@@ -56,6 +56,7 @@ class HomeController extends Controller
         $project_resources = [];
         foreach ($projects as $project) {
             $project_data = ProjectResource::with('resource')->where('project_id', $project->project_id)
+            ->whereYear('allocation_start_date', $request->year)->whereMonth('allocation_start_date', $request->month)
                 ->select('resource_id', 'allocation')->get();
             $project_resources['each'][] = [
                 'project_name' => $project->project->name,
