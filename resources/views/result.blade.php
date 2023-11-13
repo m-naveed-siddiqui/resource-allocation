@@ -50,15 +50,13 @@
                         html_total += '<br><hr><strong>Total Allocation:</strong> ';
                         html_total +=  data['resources'].map(resource => {
                             const busy_resource = data['total_allocation'].find(br => br.resource_id==resource.id);
-                            const resource_total_allocation = busy_resource?.total_allocation ?? 0;
-                            return `${resource.name} <small>(${resource_total_allocation}%)</small>`;
+                            return `${resource.name} <small>(${busy_resource?.total_allocation ?? 0}%)</small>`;
                         }).join(", ");
 
                         html_total += '<br><hr><strong>Total Un-Allocation:</strong> ';
                         html_total +=  data['resources'].map(resource => {
                             const busy_resource = data['total_allocation'].find(br => br.resource_id==resource.id);
-                            const resource_total_unallocation = 100 - (busy_resource?.total_allocation ?? 0);
-                            return `${resource.name} <small>(${resource_total_unallocation<0 ? 0 : resource_total_unallocation}%)</small>`;
+                            return `${resource.name} <small>(${100 - (busy_resource?.total_allocation ?? 0)}%)</small>`;
                         }).join(", ");
 
                         $('#result').append(html_total);

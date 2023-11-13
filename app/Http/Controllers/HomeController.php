@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectResource;
 use App\Models\Resource;
 use App\Models\Role;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -50,22 +51,41 @@ class HomeController extends Controller
 
     public function result(Request $request)
     {
-        $projects = ProjectResource::select('project_id')
-            ->whereYear('allocation_start_date', $request->year)->whereMonth('allocation_start_date', $request->month)
-            ->distinct()->get();
+        $month_last_date = [
+            '01' => 31,
+            '02' => 28,
+            '03' => 31,
+            '04' => 30,
+            '05' => 31,
+            '06' => 30,
+            '07' => 31,
+            '08' => 31,
+            '09' => 30,
+            '10' => 31,
+            '11' => 30,
+            '12' => 31,
+        ];
+        $date_string = $request->year.'-'.$request->month.'-'.$month_last_date[$request->month];
+        $date = Carbon::parse($date_string);
+
+        $range_condition = [
+            ['allocation_start_date', '<=', $date],
+            ['allocation_end_date', '>=', $date],
+        ];
+
+        $projects = ProjectResource::select('project_id')->where($range_condition)->distinct()->get();
+
         $project_resources = [];
         foreach ($projects as $project) {
-            $project_data = ProjectResource::with('resource')->where('project_id', $project->project_id)
-            ->whereYear('allocation_start_date', $request->year)->whereMonth('allocation_start_date', $request->month)
-                ->select('resource_id', 'allocation')->get();
+            $project_data = ProjectResource::with('resource')->select('resource_id', 'allocation')
+                ->where('project_id', $project->project_id)->where($range_condition)->get();
             $project_resources['each'][] = [
                 'project_name' => $project->project->name,
                 'resources' => $project_data
             ];
         }
-        $project_resources['total_allocation'] = ProjectResource::with('resource')->select('resource_id', DB::raw('SUM(allocation) AS total_allocation'))
-            ->whereYear('allocation_start_date', $request->year)->whereMonth('allocation_start_date', $request->month)
-            ->groupBy('resource_id')->get();
+        $project_resources['total_allocation'] = ProjectResource::select('resource_id', DB::raw('SUM(allocation) AS total_allocation'))
+            ->where($range_condition)->groupBy('resource_id')->get();
         $project_resources['resources'] = Resource::where('joined_date', '<=', "$request->year-$request->month-31")->get();
 
         return response()->json($project_resources);
